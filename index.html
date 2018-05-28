@@ -1,0 +1,247 @@
+<html>
+<head>
+ <title> VisJS x YAML </title>
+</head>
+<script type="text/javascript" src="vis.js"></script>
+<script type="text/javascript" src="yaml.js"></script>
+<script type="text/javascript" src="ajv.min.js"></script>
+<link href="vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" />
+<link href="vis-network.min.css" rel="stylesheet" type="text/css"/>
+<script>
+  DEFAULTS = {};
+  DEFAULTS.editable = false;
+  
+  DEFAULTS_GRAPH = {};
+  
+
+function dbg(a){
+  document.getElementById('dbg').value += a + "\n";
+}
+
+function the_graph_handler(obj){
+  var schema_name = "graph";
+  var schema = YAML.load("schema/" + schema_name + ".yaml?_rnd=" + Math.random())
+  dbg("Preparing validator ... ")
+  var ajv = new Ajv;
+  var validate = ajv.compile(schema);
+  dbg("Validating against schema ... ")
+  var is_valid = validate(obj);
+  if (!is_valid) { 
+    dbg("Not valid !");
+    for (i in validate.errors){
+      var err = validate.errors[i];
+      dbg("Error: " + JSON.stringify(err));
+    }
+    return;
+  };
+  dbg("Valid !");
+  if (obj.hasOwnProperty('css')){
+    var style = document.createElement('style');
+    style.type = 'text/css';
+    style.innerHTML = '';
+    for (i in obj.css){
+      var item = obj.css[i];
+      style.innerHTML += `.${item.class} { ${item.data} }`;
+    }
+    document.getElementsByTagName('head')[0].appendChild(style);
+  }
+  var nodes = obj.nodes;
+  var edges = obj.edges;
+ 
+  var container = document.getElementById('canvas');
+  var options = Object.apply({}, DEFAULTS_GRAPH, obj.options);
+  var data = {nodes: nodes, edges: edges};
+  network = new vis.Network(container, data, options);
+}
+
+
+function the_timeline_handler(obj){
+  var schema_name = "timeline";
+  var schema = YAML.load("schema/" + schema_name + ".yaml?_rnd=" + Math.random())
+  dbg("Preparing validator ... ")
+  var ajv = new Ajv;
+  var validate = ajv.compile(schema);
+  dbg("Validating against schema ... ")
+  var is_valid = validate(obj);
+  if (!is_valid) { 
+    dbg("Not valid !");
+    for (i in validate.errors){
+      var err = validate.errors[i];
+      dbg("Error: " + JSON.stringify(err));
+    }
+    return;
+  };
+  dbg("Valid ! rendering ... ");
+  var options = Object.assign({}, DEFAULTS, obj.options);
+  dbg("OPTIONS:" + JSON.stringify(options));
+  var item_arr = [];
+  for (i in obj.items){
+    var item = obj.items[i];
+    if (!item.hasOwnProperty('id')){
+    //  item.id = "UID"+Math.random();
+    }
+    dbg("ITEM:" + JSON.stringify(item));
+    item_arr.push(item);
+  }
+  var group_arr = [];
+  for (i in obj.groups){
+    var item = obj.groups[i];
+    dbg("GROUP:"+JSON.stringify(item));
+    group_arr.push(item);
+  }
+  if (obj.hasOwnProperty('css')){
+    var style = document.createElement('style');
+    style.type = 'text/css';
+    style.innerHTML = '';
+    for (i in obj.css){
+      var item = obj.css[i];
+      style.innerHTML += `.${item.class} { ${item.data} }`;
+    }
+    document.getElementsByTagName('head')[0].appendChild(style);
+  }
+
+  var items = new vis.DataSet(item_arr);
+  var groups = new vis.DataSet(group_arr);
+  var container = document.getElementById('canvas');
+  var timeline = new vis.Timeline(container, items, groups, options);
+  timeline.on('click', function (properties) {
+    if (properties.what == 'item'){ 
+      //console.log(properties);
+      var i = timeline.itemsData._getItem(properties.item);
+      if (i.hasOwnProperty('details')){ 
+        alert(i.details); 
+      }
+      if (i.hasOwnProperty('action')){ 
+        alert(i.details); 
+      }
+      //console.log(i);
+    }
+  });
+}
+
+function do_parse(){
+  document.getElementById('dbg').value = '';
+  dbg("Getting value ... ");
+  var data = document.getElementById('the_code').value;
+  dbg("Parsing yaml ... ");
+  var obj = YAML.parse(data);
+  dbg("Loaded: " + JSON.stringify(obj));
+  dbg("Processing ... ");
+  var schema_name = obj.type;
+  dbg("Loading module " + schema_name);
+  var fn = "the_" + schema_name + "_handler";
+  var handle = window[fn];
+  handle(obj);
+}
+
+function loadExample(src_id){
+  console.log(src_id);
+  document.getElementById('the_code').value = document.getElementById(src_id).value;
+}
+
+</script>
+<body>
+  
+  <div>
+  <button onClick="loadExample('ex_timeline');">Load timeline example ...</button>
+  <button onClick="loadExample('ex_graph');">Load graph example ...</button>
+  <br>
+
+  <textarea rows="20" cols="80" id="the_code">
+
+type: xx
+
+  </textarea>
+  <textarea id="dbg" readonly=1 rows="20" cols="80">Debug ... </textarea><br>
+  <button onClick="do_parse()">Parse && render .. </button>
+  </div>
+  <hr>
+  <div id="canvas">
+    
+  </div>
+
+
+
+<textarea style="visibility:hidden" id="ex_timeline">
+type: timeline
+
+css: 
+  - class: theClass
+    data: "background: red"
+
+options:
+  start: 2018-05-10
+  end: 2018-05-25
+
+groups:
+  - id: g1
+    content: Group1 
+
+  - id: g2
+    content: Group2
+    
+items:
+  - content: Hello here
+    start: 2018-05-20
+    group: g1
+    className: theClass
+
+  - content: EVENT <a href="/test">xx</a>
+    start: 2018-05-15T13:30
+    group: g2
+    details: This is message
+
+  - content: Range
+    start: 2018-05-12
+    end: 2018-05-22
+    type: background
+    group: g2
+
+  - content: Range2
+    start: 2018-05-10
+    end: 2018-05-15
+    type: background
+    group: g1  
+
+  - content: range3
+    start: 2018-05-09T19:20
+    end: 2018-05-12T01:44
+    group: g2
+    
+</textarea>
+<textarea style="visibility:hidden" id="ex_graph">
+type: graph
+
+options:
+  edges: { width: 2 }
+
+nodes:
+  - id: n1
+    label: node1
+    group: g1
+    class: theClass
+
+  - id: n2
+    label: node2
+    group: g1
+
+
+  - id: n3
+    label: node2
+    group: g2
+    shape: triangle
+   
+   
+edges:
+  - { from: n1, to: n2 }
+  - { from: n1, to: n3 }
+  - { from: n3, to: n2 }
+
+
+
+</textarea>
+  
+
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+## http://json-schema.org/
+
+title: fw_scheme
+type: object
+properties: 
+  name: { type: string }
+  desc: { type: string }
+  hosts: { type: array, items: { $ref: '#/definitions/host' } }
+  rules: { type: array, items: { $ref: '#/definitions/rule' } }
+required: [hosts, rules]
+definitions:
+  host:
+    properties:
+      name: { type: string, pattern: '^[a-zA-Z0-9_]'}
+      ipv4: { type: array, items: { type: string, pattern: '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' } }
+      zone: { type: string, pattern: '^[a-zA-Z0-9]'}
+      desc: { type: string }
+      dns:  { type: array, items: { type: string, pattern: '^[a-zA-Z0-9\.]*$' } }
+    required: [name, ipv4]
+  rule:
+    properties:
+      src: { type: object }
+      dst: { type: object }
+      proto: { enum: [ tcp, udp, any ] }
+      desc: { type: string }
+      service: { type: string }
+    required: [src, dst, proto]
+  hostport:
+    properties:
+      addr: { type: array }
+      port: { type: array }
+    required: [ addr, port ]

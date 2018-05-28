@@ -1,0 +1,37 @@
+## http://json-schema.org/
+
+title: visjs uaml scheme for timeline
+type: object
+properties: 
+  type: { type: string, pattern: '^[a-zA-Z0-9_]' }
+  options: { $ref: '#/definitions/options' }
+  css: { type: array, items: { $ref: '#/definitions/cssItem' } }
+  groups: { type: array, items: { $ref: '#/definitions/group' }}
+  items: { type: array, items: { $ref: '#/definitions/item' } }
+required: [type, items]
+definitions:
+  cssItem:
+    type: object
+    properties:
+      class: { type: string, pattern: '^[a-zA-Z0-9_]'}
+      data: { type: string }
+  options:
+    type: object
+    properties:
+      start: {  }
+      end: {  }
+  group:
+    required: [id]
+    properties:
+      id: { type: string }
+      content: { type: string }
+  item:
+    required: [start, content]
+    properties:
+      id: { type: string }
+      start: {  }
+      end: { }
+      content: { type: string }
+      className: { type: string }
+      groups: { type: string }
+      type: { type: string }
